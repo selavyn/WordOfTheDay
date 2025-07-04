@@ -26,8 +26,8 @@ for i, letter in enumerate(json.loads(apiGet.content)[0]):
 
 mp3_input = 'input.mp3'
 video_output = 'output.mp4'
-width = 1280
-height = 720
+width = 1920
+height = 1080
 
 # Play the word of the day using edge_tts
 
@@ -57,6 +57,8 @@ def create_video_from_audio(mp3_input,video_output):
     vid = ffmpeg.input(f'color=c=white:s={width}x{height}:r=30:d=10', f='lavfi')
 
     vid = ffmpeg.drawtext(vid, text='The word of the day is..', fontfile='ARIAL.TTF', fontsize=64, fontcolor='black', x=f'({width}/2)-(text_w/2)', y=f'{height}/2', escape_text=True, enable="lt(n,60)", timecode_rate=30)
+
+    vid = ffmpeg.drawtext(vid, text='2025 - Selavyn', fontfile='ARIAL.TTF', fontsize=32, fontcolor='gray', x=f'({width}/2)-(text_w/2)', y=f'{height}/1.1', escape_text=True, timecode_rate=30)
 
     vid = ffmpeg.drawtext(vid, text=word, fontfile='ARIAL.TTF', fontsize=64, fontcolor='black', x=f'({width}/2)-(text_w/2)', y=f'{height}/2', escape_text=True, enable="gt(n,75)*lt(n,110)", timecode_rate=30)
 
