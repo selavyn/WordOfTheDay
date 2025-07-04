@@ -1,28 +1,46 @@
+import sys
+import subprocess
+import os
+import asyncio
+import json
+from setup import run
+import setup
 try:
     import requests
-    import json
-    import asyncio
     import edge_tts
-    import os
     import ffmpeg
     import matplotlib.font_manager
-    import subprocess
 except ImportError as e:
-    print(f"Error importing modules: {e}")
-    print("Please run 'pip install requests edge-tts ffmpeg-python matplotlib' to install the required packages.")
-    exit(1)
+    if sys.platform == 'linux':
+        print(f"Missing packages. Please install the following packages: (requests, edge_tts, ffmpeg-python, matplotlib) and FFmpeg. (not a package)")
+        exit(1)
+    wizardInput = input("Some required files are missing. Would you like to run the setup wizard? (y/n): ").strip().lower()
+    if wizardInput == 'y':
+        setup.install()
+    else:
+        print("Exiting the program. Please run the setup wizard or install the required packages manually. (Packages: requests, edge_tts, ffmpeg-python, matplotlib) and FFmpeg.")
+        exit(1)
 
+if os.system('ffmpeg') != 0:
+    run('Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser')
+    run("winget install Gyan.FFmpeg")
 
 # Fetch the word of the day from the API
 apiGet = requests.get('https://random-word-api.herokuapp.com/word')
 
-word = ""
+customWord = False
 
-for i, letter in enumerate(json.loads(apiGet.content)[0]):
-    if i==0:
-        word += letter.upper()
-    else:
-        word += letter
+word = "CustomWord"
+
+voice = 'en-US-JennyNeural'
+
+if not customWord:
+    word = ""
+    for i, letter in enumerate(json.loads(apiGet.content)[0]):
+        if i==0:
+            word += letter.upper()
+        else:
+            word += letter
 
 mp3_input = 'input.mp3'
 video_output = 'output.mp4'
@@ -32,10 +50,10 @@ height = 1080
 # Play the word of the day using edge_tts
 
 async def main():
-    wordOfTheDay = 'The word of the day, is. ' + json.loads(apiGet.content)[0]
+    wordOfTheDay = 'The word of the day, is. ' + word
     print(f"Word: {word}")
 
-    communicate = edge_tts.Communicate(wordOfTheDay, voice='en-US-JennyNeural')
+    communicate = edge_tts.Communicate(wordOfTheDay, voice=voice)
     await communicate.save(mp3_input)
 
 asyncio.run(main())
@@ -56,11 +74,11 @@ def create_video_from_audio(mp3_input,video_output):
 
     vid = ffmpeg.input(f'color=c=white:s={width}x{height}:r=30:d=10', f='lavfi')
 
-    vid = ffmpeg.drawtext(vid, text='The word of the day is..', fontfile='ARIAL.TTF', fontsize=64, fontcolor='black', x=f'({width}/2)-(text_w/2)', y=f'{height}/2', escape_text=True, enable="lt(n,60)", timecode_rate=30)
+    vid = ffmpeg.drawtext(vid, text='The word of the day is..', fontfile='ARIAL.TTF', fontsize=100, fontcolor='black', x=f'({width}/2)-(text_w/2)', y=f'{height}/2', escape_text=True, enable="lt(n,60)", timecode_rate=30)
 
-    vid = ffmpeg.drawtext(vid, text='2025 - Selavyn', fontfile='ARIAL.TTF', fontsize=32, fontcolor='gray', x=f'({width}/2)-(text_w/2)', y=f'{height}/1.1', escape_text=True, timecode_rate=30)
+    vid = ffmpeg.drawtext(vid, text='2025 - Selavyn', fontfile='ARIAL.TTF', fontsize=50, fontcolor='gray', x=f'({width}/2)-(text_w/2)', y=f'{height}/1.1', escape_text=True, timecode_rate=30)
 
-    vid = ffmpeg.drawtext(vid, text=word, fontfile='ARIAL.TTF', fontsize=64, fontcolor='black', x=f'({width}/2)-(text_w/2)', y=f'{height}/2', escape_text=True, enable="gt(n,75)*lt(n,110)", timecode_rate=30)
+    vid = ffmpeg.drawtext(vid, text=word, fontfile='ARIAL.TTF', fontsize=100, fontcolor='black', x=f'({width}/2)-(text_w/2)', y=f'{height}/2', escape_text=True, enable="gt(n,75)*lt(n,110)", timecode_rate=30)
 
     mus = ffmpeg.input(mp3_input)
     
@@ -70,4 +88,4 @@ def create_video_from_audio(mp3_input,video_output):
 
 create_video_from_audio(mp3_input, video_output)
 
-os.system(f'ffplay -autoexit {video_output}')
+os.system(f'start {video_output}')
